@@ -1,0 +1,335 @@
+---
+title: Tengsl þunglyndisþanka (rumination) og ofbeldissögu í hópum fyrrum þunglyndra
+  og þeirra sem enga fyrri sögu hafa
+author: "Brynjólfur Gauti Jonsson, Hjalti Geir Friðriksson og Málfríður Guðný Kolbeinsdótir"
+date: '`r Sys.Date()`'
+output:
+  word_document:
+    toc: yes
+  pdf_document:
+    fig_caption: yes
+    toc: yes
+  html_document: default
+header-includes:
+- \usepackage{booktabs}
+- \usepackage{float}
+- \usepackage{graphicx}
+---
+
+
+```{r, echo=FALSE, message=FALSE, results = 'hide'}
+library(foreign)
+library(ggplot2)
+library(ggthemes)
+library(ggpubr)
+library(gridExtra)
+library(dplyr)
+library(tidyr)
+library(broom)
+library(stringr)
+library(multcomp)
+library(car)
+library(knitr)
+library(xtable)
+library(Hmisc)
+```
+
+
+```{r, echo=FALSE, message = FALSE, results = 'hide', cache = TRUE}
+
+df <- read.spss('A.2___Thunglyndi___Thunglyndisthankar_og_obeldi.sav', 
+                  to.data.frame = TRUE)
+
+df <- read.spss('A.2___Thunglyndi___Thunglyndisthankar_og_obeldi.sav', 
+                  to.data.frame = TRUE)
+unique(df$Abuse)
+levels(df$Abuse) <- c('Engin Saga', 'Likamlegt og/eða Kynferðislegt',
+                      'Andlegt ofbeldi')
+names(df)
+colnames(df)[2] <- 'Depression'
+colnames(df)[1] <- 'Ofbeldi'
+levels(df$Depression) <- c('Ekki saga', 'Fyrri saga')
+
+```
+
+```{r anovapreProcess, echo=FALSE, message = FALSE, results = 'hide'}
+anovaBDI <- aov(BDItot ~ Depression + Ofbeldi + Depression:Ofbeldi, data = df)
+anovaBAI <- aov(BAItot ~ Depression + Ofbeldi + Depression:Ofbeldi, data = df)
+anovaBrood <- aov(RRSbrood ~ Depression + Ofbeldi + Depression:Ofbeldi, data = df)
+anovaRefle <- aov(RRSrefle ~ Depression + Ofbeldi + Depression:Ofbeldi, data = df)
+
+BDI <- summary.aov(anovaBDI)[[1]][,c(1,2,4,5)]
+rownames(BDI) <- c('Þunglyndi', 'Ofbeldi', 'Samvirkni', 'Residuals')
+colnames(BDI) <- c('df', 'SS', 'F', 'p')
+
+BAI <- summary.aov(anovaBAI)[[1]][,c(1,2,4,5)]
+rownames(BAI) <- c('Þunglyndi', 'Ofbeldi', 'Samvirkni', 'Residuals')
+colnames(BAI) <- c('df', 'SS', 'F', 'p')
+
+Refle <- summary.aov(anovaRefle)[[1]][,c(1,2,4,5)]
+rownames(Refle) <- c('Þunglyndi', 'Ofbeldi', 'Samvirkni', 'Residuals')
+colnames(Refle) <- c('df', 'SS', 'F', 'p')
+
+Brood <- summary.aov(anovaBrood)[[1]][,c(1,2,4,5)]
+rownames(Brood) <- c('Þunglyndi', 'Ofbeldi', 'Samvirkni', 'Residuals')
+colnames(Brood) <- c('df', 'SS', 'F', 'p')
+
+```
+
+```{r fitpreProcess, echo = FALSE, cache=TRUE}
+
+fit <- glm(Depression ~ Ofbeldi + RRSbrood + RRSrefle, data=df, family = 'binomial')
+fit2 <- glm(Depression ~ Ofbeldi, data = df, family = 'binomial')
+fit3 <- glm(Depression ~ RRSbrood + RRSrefle, data = df, family = 'binomial')
+
+lm <- lm(BDItot ~ Ofbeldi + RRSbrood + RRSrefle, data = df)
+lm2 <- lm(BDItot ~ Ofbeldi, data = df)
+lm3 <- lm(BDItot ~ RRSbrood + RRSrefle, data = df)
+
+```
+
+\newpage
+
+# Inngangur
+
+Hér verður klikkaður inngangur með lýsingu á BDI, BAI og RRS
+
+\newpage
+
+# Aðferð
+
+## Þátttakendur
+
+Bara konur. Meðalaldur er `r as.integer(mean(df$Aldur))`. 
+
+```{r, echo = FALSE,}
+kable(table(df$Ofbeldi, df$Depression), caption = 'Fjöldi þáttakenda í hópum')
+```
+
+
+## Mælitæki
+
+BDI, BAI, RRS.
+
+# Niðurstöður
+
+## Greining á Úrtaki
+
+Engin skekkja fannst í aldri þáttakenda milli hópa.
+
+```{r, echo = FALSE, cache = TRUE}
+
+alduraov <- aov(Aldur ~ Ofbeldi + Depression, data = df)
+aldur <- summary.aov(alduraov)[[1]]
+colnames(aldur) <- c('df', 'SS', 'MSS', 'F', 'p')
+options(knitr.kable.NA = '')
+kable(aldur, digits = 3, caption = 'ANOVA próf á aldur milli hópa')
+```
+
+\newpage
+
+## Línuleg forspárlíkön
+
+\begin{figure}[h]
+\includegraphics{lineplots.pdf}
+\caption{Áhrif ofbeldis- og þunglyndissögu á BDI, BAI og RRS skor}
+\centering
+\end{figure}
+
+Mynd 1 gefur til kynna að þáttakendur með fyrri sögu af þunglyndi skoruðu hærra á báðum undirþáttum RRS listans, en tengsl milli ofbeldis- og þunglyndissögu eru ekki auðséð.
+
+```{r fitTables, echo=FALSE, message=FALSE}
+
+glmCoef <- summary(fit)$coef
+confint <- confint(fit)
+glmCoef <- cbind(glmCoef[,1], confint, glmCoef[,2:4])
+glmCoef[,1:4] <- exp(glmCoef[,1:4])
+colnames(glmCoef) <- c('Coef','Neðri', 'Efri', 'SE', 'Z', 'p')
+rownames(glmCoef) <- c('Ássnið','Líkamlegt og/eða Kynferðislegt', 'Andlegt', 'RRS:Brooding', 'RRS:Reflection')
+kable(glmCoef, digits=3, caption = 'Stuðlatafla aðfallsgreiningar hlutfalla')
+```
+
+Fyrst var framkvæmd aðfallsgreining hlutfalla *(logistic regression)* þar sem fylgibreytan var *þunglyndissaga*. Líkanið staðfestir grun okkar um að hátt RRS skor auki líkur á þunglyndisgreiningu. Við getum ekki sagt að ofbeldissaga bendi til þunglyndis þar sem stuðlarnir eru ómarktækir og öryggisbil þeirra inni halda 0, þ.e. $e^0=1$.
+
+\newpage
+
+Fyrir fullkomleika var líka gerð línuleg aðfallsgreining þar sem fylgibreytan var BDI skor þátttakandans.
+
+```{r linearCoef, echo=FALSE, message=FALSE}
+lmCoef <- summary(lm)$coef
+confint2 <- confint(lm)
+lmCoef <- cbind(lmCoef[,1], confint2, lmCoef[,2:4])
+colnames(lmCoef) <- c('Coef','Neðri', 'Efri', 'SE', 'Z', 'p')
+rownames(lmCoef) <- c('Ássnið','Líkamlegt og/eða Kynferðislegt', 'Andlegt', 'RRS:Brooding', 'RRS:Reflection')
+kable(lmCoef, digits=3, caption = 'Stuðlatafla línulegrar aðfallsgreiningar')
+```
+
+Línulega aðfallsgreiningin ýtir undir niðurstöður hlutfallsgreininguna, en hún dregur úr áhrifum Reflection þætti RRS listans. Ef aftur er litið á mynd 1 sést þó að meiri munur sé milli þunglyndishópa innan Brooding breytunnar en Reflection.
+
+## Millihópa samanburður á mælikvarðaskorum
+
+Að þessu loknu var ákveðið að snúa dæminu við og líta á ofbeldis- og þunglyndissögu sem frumbreytur og prófskor sem fylgibreytur. Framkvæmd var margliða dreyfigreining þar sem prófskor voru skoðuð eftir fyrri þunglyndissögu og mögulegri ofbeldissögu.
+
+```{r, echo=FALSE, warning=FALSE, results = 'asis'}
+options(knitr.kable.NA = '')
+
+
+
+t1 <- kable(BDI, digits = 3, format = 'latex', booktabs = TRUE)
+t2 <- kable(BAI, digits = 3, format = 'latex', booktabs = TRUE)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Áhrif fyrri sögu á BDI skor}
+      \\centering",
+        t1,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\centering
+        \\caption{Áhrif fyrri sögu á BAI skor}",
+        t2,
+    "\\end{minipage} 
+\\end{table}"
+))
+```
+
+Svo virðist vera sem fyrri saga um ofbeldi, hvort sem andlegt eða líkamlegt, hafi ekki marktæk áhrif á prófskor á BDI og BAI kvörðum umfram áhrif sem spretta af fyrri þunglyndissögu.
+
+
+```{r, echo=FALSE, warning = FALSE, results = 'asis'}
+options(knitr.kable.NA = '')
+
+t3 <- kable(Brood, digits = 3, format = 'latex', booktabs = TRUE)
+t4 <- kable(Refle, digits = 3, format = 'latex', booktabs = TRUE)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Áhrif fyrri sögu á RRS Brooding skor}
+      \\centering",
+        t3,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\centering
+        \\caption{Áhrif fyrri sögu á RRS Reflection skor}",
+        t4,
+    "\\end{minipage} 
+\\end{table}"
+))
+```
+
+Þegar prófskor á RRS kvarða eru skoðuð fást hins vegar marktæk áhrif frá bæði þunglyndis- og ofbeldissögu. Einnig sjást marktæk samvirkniáhrif frumbreytanna á Brooding þáttinn undir RRS skalanum. 
+
+\newpage
+
+Þar sem breytan *Ofbeldi* er þríþætt þarf að framkvæma post-hoc próf á dreyfigreiningarlíkön til að ákvarða hvar munurinn liggur.
+
+```{r, echo=FALSE}
+TukeyRefle <- TukeyHSD(anovaRefle, which = 'Ofbeldi')[[1]]
+colnames(TukeyRefle) <- c('Munur', 'Neðri', 'Efri', 'p')
+rownames(TukeyRefle) <- c('Líkamlegt og/eða Kynferðislegt - Engin Saga',
+                          'Andlegt Ofbeldi - Engin Saga',
+                          'Andlegt Ofbeldi - Líkamlegt og/eða Kynferðislegt')
+kable(TukeyRefle, digits = 3,
+      caption = 'TukeyHSD post-hoc greining á Reflection þátt.')
+
+leveneRefle <- leveneTest(RRSrefle~ Ofbeldi*Depression, data = df)
+colnames(leveneRefle) <- c('df', 'F', 'p')
+rownames(leveneRefle) <- c('RRSrefle ~ Ofbeldi*Þunglyndi', '')
+leveneRefle <- leveneRefle[1,]
+kable(leveneRefle, digits = 3,
+caption = "Levene's Test of Normality á Reflection skor.")
+```
+
+Öll áhrif breytunnar, *Ofbeldi*, á *Reflection* skor virðast liggja í sögu um andlegu ofbeldi. Við getum ekki alhæft um mun á líkamlegu og andlegu ofbeldi þar sem *0* liggur rétt svo innan öryggismarka á muninum þeirra. Levene's próf á áhrif frumbreyta á Reflection skor leyfa okkur að gera ráð fyrir normaldreyfingu svo fullyrðingar dreyfigreiningar standa.
+
+```{r, echo = FALSE}
+TukeyBrood <- TukeyHSD(anovaBrood, which = 'Ofbeldi')[[1]]
+colnames(TukeyBrood) <- c('Munur', 'Neðri', 'Efri', 'p')
+rownames(TukeyBrood) <- c('Líkamlegt og/eða Kynferðislegt - Engin Saga',
+                          'Andlegt Ofbeldi - Engin Saga',
+                          'Andlegt Ofbeldi - Líkamlegt og/eða Kynferðislegt')
+kable(TukeyBrood, digits = 3,
+      caption = 'TukeyHSD post-hoc greining á Brooding þátt.')
+
+leveneBrood <- leveneTest(RRSbrood~ Ofbeldi*Depression, data = df)
+colnames(leveneBrood) <- c('df', 'F', 'p')
+rownames(leveneBrood) <- c('RRSbrood ~ Ofbeldi*Þunglyndi', '')
+leveneBrood <- leveneBrood[1,]
+kable(leveneBrood, digits = 3,
+caption = "Levene's Test of Normality á Brooding skor.")
+```
+
+Innan *Brooding* skorsins sjáum við sama munstur. Andlegt ofbeldi virðist hafa mun meiri áhrif en líkamlegt. Hins vegar bendir próf Levene's til að ein undirliggjandi krafa dreyfigreiningarinnar, nefnilega normaldreifing, sé ekki til staðar. Við getum því ekki tekið niðurstöðum okkar á þessu sviði of alvarlega.
+
+\newpage
+
+## Fylgnitöflur prófskora
+
+Einnig skoðuðum við fylgni milli prófskora til að athuga tengsl milli prófanna sjálfra. Við skiptum fylgniritunum í tvennt eftir því hvort þáttakandi hefði fyrri sögu um þunglyndi eða ekki.
+
+```{r, echo = FALSE, warning = FALSE, results = 'asis'}
+fylgni <- rcorr(as.matrix(df[df$Depression == 'Ekki saga',5:8]), type = 'pearson')$r
+fylgnip <- rcorr(as.matrix(df[df$Depression == 'Ekki saga',5:8]), type = 'pearson')$P
+rownames(fylgni) <- c('BDI', 'BAI', 'Brooding', 'Reflection')
+colnames(fylgni) <- rownames(fylgni)
+rownames(fylgnip) <- rownames(fylgni)
+colnames(fylgnip) <- rownames(fylgni)
+options(scipen = 999)
+t5 <- kable(fylgni, digits = 3, format = 'latex', booktabs = TRUE)
+t6 <- kable(fylgnip, digits = 3, format = 'latex', booktabs = TRUE)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Fylgnirit prófskora án þunglyndissögu}
+      \\centering",
+        t5,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\centering
+        \\caption{P-gildi fylgnistuðla}",
+        t6,
+    "\\end{minipage} 
+\\end{table}"
+))
+
+```
+
+Við sjáum hér mikla fylgni milli þunglyndisþanka og þunglyndis, en þó meðal fólks án fyrri sögu um þunglyndi.
+
+
+
+```{r, echo = FALSE, warning = FALSE, results = 'asis'}
+fylgni <- rcorr(as.matrix(df[df$Depression == 'Fyrri saga',5:8]), type = 'pearson')$r
+fylgnip <- rcorr(as.matrix(df[df$Depression == 'Fyrri saga',5:8]), type = 'pearson')$P
+rownames(fylgni) <- c('BDI', 'BAI', 'Brooding', 'Reflection')
+colnames(fylgni) <- rownames(fylgni)
+rownames(fylgnip) <- rownames(fylgni)
+colnames(fylgnip) <- rownames(fylgni)
+options(scipen = 999)
+t5 <- kable(fylgni, digits = 3, format = 'latex', booktabs = TRUE)
+t6 <- kable(fylgnip, digits = 3, format = 'latex', booktabs = TRUE)
+
+cat(c("\\begin{table}[!htb]
+    \\begin{minipage}{.5\\linewidth}
+      \\caption{Fylgnirit prófskora með þunglyndissögu}
+      \\centering",
+        t5,
+    "\\end{minipage}%
+    \\begin{minipage}{.5\\linewidth}
+      \\centering
+        \\caption{P-gildi fylgnistuðla}",
+        t6,
+    "\\end{minipage} 
+\\end{table}"
+))
+```
+
+Þegar próftakandinn hafði fyrri sögu um þunglyndi var fylgnin nánast engin og p-gildi segja jafnvel að fylgnin gæti vel verið engin.
+
+
+# Umræða
+
+Hrottalega flottar umræður hér í gangi.
+
+\newpage
+
