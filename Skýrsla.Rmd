@@ -4,16 +4,23 @@ title: Tengsl þunglyndisþanka (rumination) og ofbeldissögu í hópum fyrrum �
 author: "Brynjólfur Gauti Jonsson, Hjalti Geir Friðriksson og Málfríður Guðný Kolbeinsdótir"
 date: '`r Sys.Date()`'
 output:
-  word_document:
-    toc: yes
   pdf_document:
     fig_caption: yes
     toc: yes
   html_document: default
+  word_document:
+    toc: yes
 header-includes:
 - \usepackage{booktabs}
 - \usepackage{float}
 - \usepackage{graphicx}
+- \usepackage{caption}
+- \captionsetup[table]{name = Tafla}
+- \captionsetup[figure]{name = Mynd}
+language:
+    label:
+        tab: 'Tafla'
+        fig: 'Mynd'
 ---
 
 
@@ -32,6 +39,7 @@ library(car)
 library(knitr)
 library(xtable)
 library(Hmisc)
+library(bookdown)
 ```
 
 
@@ -128,7 +136,7 @@ kable(aldur, digits = 3, caption = 'ANOVA próf á aldur milli hópa')
 
 \newpage
 
-## Línuleg forspárlíkön
+## Greining gagna
 
 \begin{figure}[h]
 \includegraphics{lineplots.pdf}
@@ -137,6 +145,21 @@ kable(aldur, digits = 3, caption = 'ANOVA próf á aldur milli hópa')
 \end{figure}
 
 Mynd 1 gefur til kynna að þáttakendur með fyrri sögu af þunglyndi skoruðu hærra á báðum undirþáttum RRS listans, en tengsl milli ofbeldis- og þunglyndissögu eru ekki auðséð.
+
+```{r, echo = FALSE, message=FALSE}
+tafla <- df %>%
+    group_by(Depression, Ofbeldi) %>%
+    summarise(Brooding = mean(RRSbrood), Reflection = mean(RRSrefle), 
+              BDI = mean(BDItot))
+colnames(tafla)[1] <- 'Þunglyndi'
+kable(tafla, digits = 2, caption = 'Meðalskor hópa á prófum.')
+```
+
+Tafla 3 styður niðurstöður frá mynd 1. Þunglyndi virðist tengt báðum undirþáttum RRS skorum en ofbeldissaga hefur blönduð áhrif á þá.
+
+\newpage
+
+## Línuleg Forspárlíkön
 
 ```{r fitTables, echo=FALSE, message=FALSE}
 
@@ -150,8 +173,6 @@ kable(glmCoef, digits=3, caption = 'Stuðlatafla aðfallsgreiningar hlutfalla')
 ```
 
 Fyrst var framkvæmd aðfallsgreining hlutfalla *(logistic regression)* þar sem fylgibreytan var *þunglyndissaga*. Líkanið staðfestir grun okkar um að hátt RRS skor auki líkur á þunglyndisgreiningu. Við getum ekki sagt að ofbeldissaga bendi til þunglyndis þar sem stuðlarnir eru ómarktækir og öryggisbil þeirra inni halda 0, þ.e. $e^0=1$.
-
-\newpage
 
 Fyrir fullkomleika var líka gerð línuleg aðfallsgreining þar sem fylgibreytan var BDI skor þátttakandans.
 
@@ -324,7 +345,7 @@ cat(c("\\begin{table}[!htb]
 ))
 ```
 
-Þegar próftakandinn hafði fyrri sögu um þunglyndi var fylgnin nánast engin og p-gildi segja jafnvel að fylgnin gæti vel verið engin.
+Þegar próftakandinn hafði fyrri sögu um þunglyndi var fylgnin lítil og p-gildi segja að fylgnin gæti vel verið engin.
 
 
 # Umræða
